@@ -1,0 +1,28 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
+}
+
+application {
+    mainClass = 'com.ug.stosrpn.application.Main'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+task runMain(type: JavaExec) {
+    group = "Execution"
+    description = "Run the main class"
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.ug.stosrpn.application.Main'
+}
