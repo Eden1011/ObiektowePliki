@@ -17,9 +17,11 @@ interface ProductOperations {
   double discountProduct(double newPrice);
 
   double revertPrice();
+
+  int compareTo(Product other);
 }
 
-public class Product implements ProductOperations {
+public class Product implements ProductOperations, Comparable<Product> {
   private String name;
   private double price;
   private double discountPrice;
@@ -42,6 +44,18 @@ public class Product implements ProductOperations {
     this.discountPrice = price;
   }
 
+  public static double calculateTotalPrice(Product[] products) {
+    if (products == null || products.length == 0) {
+      return 0.0;
+    }
+
+    double total = 0.0;
+    for (Product product : products) {
+      total += product.getPrice();
+    }
+    return total;
+  }
+
   public static Product[] sort(Product[] productArray, Comparator<Product> comparator) {
     if (productArray == null || productArray.length == 0) {
       return new Product[0];
@@ -55,38 +69,34 @@ public class Product implements ProductOperations {
     return sort(productArray, new Comparator<Product>() {
       @Override
       public int compare(Product p1, Product p2) {
-        int priceComparison = Double.compare(p2.getPrice(), p1.getPrice());
-        if (priceComparison == 0) {
-          return p1.getName().compareToIgnoreCase(p2.getName());
-        }
-        return priceComparison;
+        return p1.compareTo(p2);
       }
     });
   }
 
-  public static Product findCheapest(Product[] productArray, boolean negate) {
-    if (productArray == null || productArray.length == 0) {
+  public static Product findCheapest(Product[] products, boolean negate) {
+    if (products == null || products.length == 0) {
       return null;
     }
 
-    if (productArray.length == 1) {
-      return productArray[0];
+    if (products.length == 1) {
+      return products[0];
     }
 
     Comparator<Product> comparator = negate ? (p1, p2) -> Double.compare(p2.getPrice(), p1.getPrice())
         : (p1, p2) -> Double.compare(p1.getPrice(), p2.getPrice());
 
-    Product[] sortedProducts = sort(productArray, comparator);
+    Product[] sortedProducts = sort(products, comparator);
     return sortedProducts[0];
   }
 
-  public static Product[] findCheapest(Product[] productArray, boolean negate, int slice) {
-    if (productArray == null || productArray.length == 0) {
+  public static Product[] findCheapest(Product[] products, boolean negate, int slice) {
+    if (products == null || products.length == 0) {
       return new Product[0];
     }
 
-    if (productArray.length == 1) {
-      return productArray;
+    if (products.length == 1) {
+      return products;
     }
 
     if (slice <= 0) {
@@ -96,8 +106,17 @@ public class Product implements ProductOperations {
     Comparator<Product> comparator = negate ? (p1, p2) -> Double.compare(p2.getPrice(), p1.getPrice())
         : (p1, p2) -> Double.compare(p1.getPrice(), p2.getPrice());
 
-    Product[] sortedProducts = sort(productArray, comparator);
+    Product[] sortedProducts = sort(products, comparator);
     return Arrays.copyOf(sortedProducts, Math.min(slice, sortedProducts.length));
+  }
+
+  @Override
+  public int compareTo(Product other) {
+    int priceComparison = Double.compare(other.getPrice(), this.getPrice());
+    if (priceComparison == 0) {
+      return this.getName().compareToIgnoreCase(other.getName());
+    }
+    return priceComparison;
   }
 
   @Override
