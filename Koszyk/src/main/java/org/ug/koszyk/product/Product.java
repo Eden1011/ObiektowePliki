@@ -42,27 +42,62 @@ public class Product implements ProductOperations {
     this.discountPrice = price;
   }
 
+  public static Product[] sort(Product[] productArray, Comparator<Product> comparator) {
+    if (productArray == null || productArray.length == 0) {
+      return new Product[0];
+    }
+    Product[] sortedArray = Arrays.copyOf(productArray, productArray.length);
+    Arrays.sort(sortedArray, comparator);
+    return sortedArray;
+  }
+
   public static Product[] sort(Product[] productArray) {
+    return sort(productArray, new Comparator<Product>() {
+      @Override
+      public int compare(Product p1, Product p2) {
+        int priceComparison = Double.compare(p2.getPrice(), p1.getPrice());
+        if (priceComparison == 0) {
+          return p1.getName().compareToIgnoreCase(p2.getName());
+        }
+        return priceComparison;
+      }
+    });
+  }
+
+  public static Product findCheapest(Product[] productArray, boolean negate) {
+    if (productArray == null || productArray.length == 0) {
+      return null;
+    }
+
+    if (productArray.length == 1) {
+      return productArray[0];
+    }
+
+    Comparator<Product> comparator = negate ? (p1, p2) -> Double.compare(p2.getPrice(), p1.getPrice())
+        : (p1, p2) -> Double.compare(p1.getPrice(), p2.getPrice());
+
+    Product[] sortedProducts = sort(productArray, comparator);
+    return sortedProducts[0];
+  }
+
+  public static Product[] findCheapest(Product[] productArray, boolean negate, int slice) {
     if (productArray == null || productArray.length == 0) {
       return new Product[0];
     }
 
-    Product[] sortedArray = Arrays.copyOf(productArray, productArray.length);
+    if (productArray.length == 1) {
+      return productArray;
+    }
 
-    Arrays.sort(sortedArray, new Comparator<Product>() {
-      @Override
-      public int compare(Product p1, Product p2) {
-        int priceComparison = Double.compare(p2.getPrice(), p1.getPrice());
+    if (slice <= 0) {
+      throw new IllegalArgumentException("Slice must be positive");
+    }
 
-        if (priceComparison == 0) {
-          return p1.getName().compareToIgnoreCase(p2.getName());
-        }
+    Comparator<Product> comparator = negate ? (p1, p2) -> Double.compare(p2.getPrice(), p1.getPrice())
+        : (p1, p2) -> Double.compare(p1.getPrice(), p2.getPrice());
 
-        return priceComparison;
-      }
-    });
-
-    return sortedArray;
+    Product[] sortedProducts = sort(productArray, comparator);
+    return Arrays.copyOf(sortedProducts, Math.min(slice, sortedProducts.length));
   }
 
   @Override
