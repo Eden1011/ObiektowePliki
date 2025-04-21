@@ -3,34 +3,42 @@ package org.ug.koszyk.sale;
 import org.ug.koszyk.cart.Cart;
 import org.ug.koszyk.product.Product;
 
+import java.util.List;
+
 public class ProductCouponSale implements Sale {
   private final String productCode;
   private final double discountPercentage;
   private final String description;
-  private Product affectedProduct;
-  private boolean isUsed;
+  private boolean used = false;
 
   public ProductCouponSale(String productCode, double discountPercentage, String description) {
+    if (productCode == null || productCode.trim().isEmpty()) {
+      throw new IllegalArgumentException("Product code cannot be null or empty");
+    }
+    if (discountPercentage < 0 || discountPercentage > 100) {
+      throw new IllegalArgumentException("Discount percentage must be between 0 and 100");
+    }
+    if (description == null || description.trim().isEmpty()) {
+      throw new IllegalArgumentException("Description cannot be null or empty");
+    }
+
     this.productCode = productCode;
     this.discountPercentage = discountPercentage;
     this.description = description;
-    this.isUsed = false;
   }
 
   @Override
   public void apply(Cart cart) {
-    if (isUsed) {
+    if (cart == null || cart.getSize() == 0 || used) {
       return;
     }
 
-    Product[] products = cart.getProducts();
-
+    List<Product> products = cart.getProducts();
     for (Product product : products) {
       if (product.getCode().equals(productCode) && !product.isDiscounted()) {
         double newPrice = product.getPrice() * (1 - discountPercentage / 100);
         product.discountProduct(newPrice);
-        affectedProduct = product;
-        isUsed = true;
+        used = true;
         break;
       }
     }
@@ -38,37 +46,47 @@ public class ProductCouponSale implements Sale {
 
   @Override
   public void cancel(Cart cart) {
-    if (!isUsed || affectedProduct == null) {
+    if (cart == null || cart.getSize() == 0 || !used) {
       return;
     }
 
-    if (affectedProduct.isDiscounted()) {
-      affectedProduct.revertPrice();
+    List<Product> products = cart.getProducts();
+    for (Product product : products) {
+      if (product.getCode().equals(productCode) && product.isDiscounted()) {
+        try {
+          product.revertPrice();
+        } catch (IllegalStateException e) {
+        }
+        used = false;
+        break;
+      }
     }
-
-    affectedProduct = null;
-    isUsed = false;
+    if (used)
+      used = false;
   }
 
   @Override
   public double calculateBenefit(Cart cart) {
-    if (isUsed) {
-      return 0;
+    if (cart == null || cart.getSize() == 0 || used) {
+      return 0.0;
     }
 
-    Product[] products = cart.getProducts();
-
+    List<Product> products = cart.getProducts();
     for (Product product : products) {
       if (product.getCode().equals(productCode)) {
         return product.getPrice() * discountPercentage / 100;
       }
     }
 
-    return 0;
+    return 0.0;
   }
 
   @Override
   public String getDescription() {
     return description;
+  }
+
+  public boolean isUsed() {
+    return used;
   }
 }

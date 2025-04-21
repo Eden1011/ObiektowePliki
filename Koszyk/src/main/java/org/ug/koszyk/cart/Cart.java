@@ -2,46 +2,58 @@ package org.ug.koszyk.cart;
 
 import org.ug.koszyk.product.Product;
 import org.ug.koszyk.sale.Sale;
-
+import org.ug.koszyk.sale.SaleOptimizer;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-public class Cart {
-  private Product[] products;
-  private int size;
-  private int capacity;
-  private List<Sale> availableSales;
-  private List<Sale> appliedSales;
+interface CartOperations {
+  void addProduct(Product product);
 
-  public Cart(int initialCapacity) {
-    this.capacity = initialCapacity > 0 ? initialCapacity : 10;
-    this.products = new Product[capacity];
-    this.size = 0;
-    this.availableSales = new ArrayList<>();
-    this.appliedSales = new ArrayList<>();
-  }
+  void removeProduct(Product product);
 
-  public Cart() {
-    this(10);
-  }
+  List<Product> getProducts();
+
+  int getSize();
+
+  double getTotalPrice();
+
+  void sortProducts();
+
+  void sortProducts(Comparator<Product> comparator);
+
+  void addSale(Sale sale);
+
+  void removeSale(Sale sale);
+
+  List<Sale> getAvailableSales();
+
+  List<Sale> getAppliedSales();
+
+  double applySales();
+
+  Product findCheapest();
+
+  Product findCheapest(boolean negate);
+
+  List<Product> findCheapest(int n);
+
+  List<Product> findCheapest(boolean negate, int slice);
+}
+
+public class Cart implements CartOperations {
+  private List<Product> products = new ArrayList<>();
+  private List<Sale> availableSales = new ArrayList<>();
+  private List<Sale> appliedSales = new ArrayList<>();
 
   public void addProduct(Product product) {
     if (product == null) {
       throw new IllegalArgumentException("Product cannot be null");
     }
 
-    ensureCapacity();
-    products[size++] = product;
+    products.add(product);
     sortProducts();
-  }
-
-  private void ensureCapacity() {
-    if (size == capacity) {
-      capacity *= 2;
-      products = Arrays.copyOf(products, capacity);
-    }
   }
 
   public void removeProduct(Product product) {
@@ -49,58 +61,35 @@ public class Cart {
       return;
     }
 
-    for (int i = 0; i < size; i++) {
-      if (products[i].getCode().equals(product.getCode())) {
-        removeProductAt(i);
-        return;
-      }
-    }
+    products.removeIf(p -> p.getCode().equals(product.getCode()));
   }
 
-  private void removeProductAt(int index) {
-    if (index < 0 || index >= size) {
-      return;
-    }
-
-    for (int i = index; i < size - 1; i++) {
-      products[i] = products[i + 1];
-    }
-
-    products[--size] = null;
-  }
-
-  public Product[] getProducts() {
-    return Arrays.copyOf(products, size);
+  public List<Product> getProducts() {
+    return new ArrayList<>(products);
   }
 
   public int getSize() {
-    return size;
+    return products.size();
   }
 
   public double getTotalPrice() {
-    return Product.calculateTotalPrice(getProducts());
+    return Product.calculateTotalPrice(products);
   }
 
   public void sortProducts() {
-    if (size <= 1) {
+    if (products.size() <= 1) {
       return;
     }
 
-    Arrays.sort(products, 0, size, (p1, p2) -> {
-      int priceComparison = Double.compare(p2.getPrice(), p1.getPrice());
-      if (priceComparison == 0) {
-        return p1.getName().compareToIgnoreCase(p2.getName());
-      }
-      return priceComparison;
-    });
+    Collections.sort(products, (p1, p2) -> p1.compareTo(p2, true));
   }
 
   public void sortProducts(Comparator<Product> comparator) {
-    if (size <= 1 || comparator == null) {
+    if (products.size() <= 1 || comparator == null) {
       return;
     }
 
-    Arrays.sort(products, 0, size, comparator);
+    Collections.sort(products, comparator);
   }
 
   public void addSale(Sale promotion) {
@@ -134,30 +123,19 @@ public class Cart {
   public double applySales() {
     cancelAllSales();
 
-    List<Sale> remainingSales = new ArrayList<>(availableSales);
-
-    while (!remainingSales.isEmpty()) {
-      Sale bestSale = null;
-      double bestBenefit = 0;
-
-      for (Sale promotion : remainingSales) {
-        double benefit = promotion.calculateBenefit(this);
-        if (benefit > bestBenefit) {
-          bestBenefit = benefit;
-          bestSale = promotion;
-        }
-      }
-
-      if (bestSale == null || bestBenefit <= 0) {
-        break;
-      }
-
-      bestSale.apply(this);
-      appliedSales.add(bestSale);
-      remainingSales.remove(bestSale);
+    if (availableSales.isEmpty() || products.isEmpty()) {
+      return getTotalPrice();
     }
 
-    return getTotalPrice();
+    List<Sale> optimalSales = SaleOptimizer.findOptimalSaleOrder(this, availableSales);
+
+    for (Sale sale : optimalSales) {
+      sale.apply(this);
+      appliedSales.add(sale);
+    }
+    double afterPrice = getTotalPrice();
+
+    return afterPrice;
   }
 
   private void cancelSale(Sale promotion) {
@@ -177,34 +155,30 @@ public class Cart {
   }
 
   public Product findCheapest() {
-    if (size == 0) {
+    if (products.isEmpty()) {
       return null;
     }
-
-    return Product.findCheapest(getProducts(), false);
+    return Product.findCheapest(products, false);
   }
 
-  public Product findMostExpensive() {
-    if (size == 0) {
+  public Product findCheapest(boolean negate) {
+    if (products.isEmpty()) {
       return null;
     }
-
-    return Product.findCheapest(getProducts(), true);
+    return Product.findCheapest(products, negate);
   }
 
-  public Product[] findCheapest(int n) {
-    if (size == 0 || n <= 0) {
-      return new Product[0];
+  public List<Product> findCheapest(int n) {
+    if (products.isEmpty() || n <= 0) {
+      return new ArrayList<>();
     }
-
-    return Product.findCheapest(getProducts(), false, n);
+    return Product.findCheapest(products, false, n);
   }
 
-  public Product[] findMostExpensive(int n) {
-    if (size == 0 || n <= 0) {
-      return new Product[0];
+  public List<Product> findCheapest(boolean negate, int slice) {
+    if (products.isEmpty() || slice <= 0) {
+      return new ArrayList<>();
     }
-
-    return Product.findCheapest(getProducts(), true, n);
+    return Product.findCheapest(products, negate, slice);
   }
 }
