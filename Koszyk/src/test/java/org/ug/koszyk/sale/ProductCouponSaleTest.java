@@ -71,10 +71,10 @@ class ProductCouponSaleTest {
     assertFalse(headphones.isDiscounted());
     assertTrue(sale.isUsed());
 
-    assertEquals(840.0, phone.getPrice(), 0.001); // 1200 * 0.7
+    assertEquals(840.0, phone.getPrice(), 0.001);
     assertEquals(1200.0, phone.getOriginalPrice(), 0.001);
 
-    assertEquals(3640.0, cart.getTotalPrice(), 0.001); // 4000 - 360
+    assertEquals(3640.0, cart.getTotalPrice(), 0.001);
   }
 
   @Test
@@ -152,7 +152,7 @@ class ProductCouponSaleTest {
     sale.apply(newCart);
 
     assertFalse(sale.isUsed());
-    assertEquals(1000.0, phone.getPrice(), 0.001); // Original discount remains
+    assertEquals(1000.0, phone.getPrice(), 0.001);
   }
 
   @Test
@@ -217,7 +217,7 @@ class ProductCouponSaleTest {
   @Test
   void testCalculateBenefit() {
     double benefit = sale.calculateBenefit(cart);
-    assertEquals(360.0, benefit, 0.001); // 1200 * 0.3
+    assertEquals(360.0, benefit, 0.001);
 
     Cart otherCart = new Cart();
     otherCart.addProduct(laptop);

@@ -166,7 +166,7 @@ class BuyTwoGetThirdFreeSaleTest {
   @Test
   void testCalculateBenefit() {
     double benefit = sale.calculateBenefit(cart);
-    assertEquals(300.0, benefit, 0.001); // Value of the headphones
+    assertEquals(300.0, benefit, 0.001);
 
     Cart smallCart = new Cart();
     smallCart.addProduct(laptop);

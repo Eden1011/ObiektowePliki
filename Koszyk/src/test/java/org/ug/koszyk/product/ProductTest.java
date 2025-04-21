@@ -139,7 +139,7 @@ class ProductTest {
     assertTrue(laptop.compareTo(phone, true) < 0);
 
     Product samePrice = new Product("Another Laptop", "LAP002", 2500.0);
-    assertTrue(laptop.compareTo(samePrice, true) > 0); // "L" comes after "A"
+    assertTrue(laptop.compareTo(samePrice, true) > 0);
 
     Product exactSame = new Product("Laptop", "DIFF001", 2500.0);
     assertEquals(0, laptop.compareTo(exactSame, true));
